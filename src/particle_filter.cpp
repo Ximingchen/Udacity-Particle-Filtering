@@ -42,6 +42,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	if (is_initialized) {
 		return;
 	}
+	std::default_random_engine gen;
 
 	// Initializing the number of particles
 	num_particles = 100;
