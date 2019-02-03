@@ -207,16 +207,15 @@ void ParticleFilter::resample() {
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 	
 	// normalizing the weights
+	default_random_engine rand_gen;
 
-	static default_random_engine gen;
-	gen.seed(123);
-	discrete_distribution<> dist_particles(weights.begin(), weights.end());
-	vector<Particle> new_particles;
-	new_particles.resize(num_particles);
+	discrete_distribution<> dist(weights.begin(), weights.end());
+	vector<Particle> newParticles;
 	for (int i = 0; i < num_particles; i++) {
-		new_particles[i] = particles[dist_particles(gen)];
+		int sampled_idx = dist(rand_gen);
+		newParticles.push_back(particles[sampled_idx]);
 	}
-	particles = new_particles;
+	particles = newParticles;
 	/*
 
 	default_random_engine gen;
