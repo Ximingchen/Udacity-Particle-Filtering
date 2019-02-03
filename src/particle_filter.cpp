@@ -109,6 +109,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 		}
 		particles[i].theta = theta0 + yaw_rate * delta_t + error_theta;
 	}
+	cout << " running predictions " << endl;
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
@@ -129,9 +130,8 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 			}
 		}
 		if (min_dist > 1.0e10) obs_landmark.id = -1; // cannot find any associations
-		cout << obs_landmark.id << endl;
 	}
-
+	cout << " data associations " << endl;
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
@@ -150,7 +150,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	// transformation from one system to another:
 	double std_x = std_landmark[0];
 	double std_y = std_landmark[1];
-
+	cout << " starting to update weight " << endl;
 	for (int i = 0; i < num_particles; i++) {
 		// step 0: retrieving current information of the particle
 		double x_pos = particles[i].x;
@@ -212,6 +212,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		particles[i].weight = particle_obs_prob; // assigning probability
 		weights[i] = particle_obs_prob;
 	}
+	cout << " weight updated " << endl;
 }
 
 void ParticleFilter::resample() {
@@ -221,13 +222,14 @@ void ParticleFilter::resample() {
 	
 	// normalizing the weights
 	default_random_engine rand_gen;
-
+	cout << " resampling ... " << endl;
 	discrete_distribution<> dist(weights.begin(), weights.end());
 	vector<Particle> newParticles;
 	for (int i = 0; i < num_particles; i++) {
 		int sampled_idx = dist(rand_gen);
 		newParticles.push_back(particles[sampled_idx]);
 	}
+	cout << " new particles generated " << endl;
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations, 
