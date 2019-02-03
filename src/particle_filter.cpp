@@ -121,8 +121,6 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 		}
 		obs_landmark.id = ID; // cannot find any associations
 	}
-
-	cout << " data associations " << endl;
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
@@ -138,77 +136,71 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
 
-	// transformation from one system to another:
-	double stdLandmarkRange = std_landmark[0];
-	double stdLandmarkBearing = std_landmark[1];
-	std::default_random_engine gen;
+	double std_x = std_landmark[0];
+	double std_y = std_landmark[1];
+
 	for (int i = 0; i < num_particles; i++) {
-
-		double x = particles[i].x;
-		double y = particles[i].y;
+		// step 0: retrieving current information of the particle
+		double x_pos = particles[i].x;
+		double y_pos = particles[i].y;
 		double theta = particles[i].theta;
-		// Find landmarks in particle's range.
-		double sensor_range_2 = sensor_range * sensor_range;
-		vector<LandmarkObs> inRangeLandmarks;
-		for (unsigned int j = 0; j < map_landmarks.landmark_list.size(); j++) {
-			float landmarkX = map_landmarks.landmark_list[j].x_f;
-			float landmarkY = map_landmarks.landmark_list[j].y_f;
-			int id = map_landmarks.landmark_list[j].id_i;
-			double dX = x - landmarkX;
-			double dY = y - landmarkY;
-			if (dX*dX + dY * dY <= sensor_range_2) {
-				inRangeLandmarks.push_back(LandmarkObs{ id, landmarkX, landmarkY });
+
+		// step 1: find the landmarks that can be measured by the vehicle in the current position
+		vector<LandmarkObs> closelandmarks;
+		for (int idx_lm = 0; idx_lm < map_landmarks.landmark_list.size(); idx_lm++) {
+			double lm_x_pos = map_landmarks.landmark_list[idx_lm].x_f;
+			double lm_y_pos = map_landmarks.landmark_list[idx_lm].y_f;
+			int landmark_id = map_landmarks.landmark_list[idx_lm].id_i;
+			if (dist(x_pos, y_pos, lm_x_pos, lm_y_pos) <= sensor_range) { // landmark within the range of vehicle
+				closelandmarks.push_back(LandmarkObs{ landmark_id, lm_x_pos, lm_y_pos });
 			}
 		}
+		// step 2: tranform observations into the map coordinates
 
-		// Transform observation coordinates.
-		vector<LandmarkObs> mappedObservations;
-		for (unsigned int j = 0; j < observations.size(); j++) {
-			double xx = cos(theta)*observations[j].x - sin(theta)*observations[j].y + x;
-			double yy = sin(theta)*observations[j].x + cos(theta)*observations[j].y + y;
-			mappedObservations.push_back(LandmarkObs{ observations[j].id, xx, yy });
+		vector<LandmarkObs> transformed_obs(observations.begin(), observations.end());
+		for (int idx_obs = 0; idx_obs < observations.size(); idx_obs++) {
+			double obs_x = observations[idx_obs].x, obs_y = observations[idx_obs].y;
+			double mapped_x = cos(theta) * obs_x - sin(theta) * obs_y + x_pos;
+			double mapped_y = sin(theta) * obs_x + cos(theta) * obs_y + y_pos;
+			transformed_obs[idx_obs].x = mapped_x;
+			transformed_obs[idx_obs].y = mapped_y;
 		}
 
-		// Observation association to landmark.
-		dataAssociation(inRangeLandmarks, mappedObservations);
+		// step 3: data association - assigning observations to landmarks
+		dataAssociation(closelandmarks, transformed_obs);
 
-		// Reseting weight.
-		particles[i].weight = 1.0;
-		// Calculate weights.
-		for (unsigned int j = 0; j < mappedObservations.size(); j++) {
-			double observationX = mappedObservations[j].x;
-			double observationY = mappedObservations[j].y;
+		// step 4: weight calculations
+		double particle_obs_prob = 1.0;
 
-			int landmarkId = mappedObservations[j].id;
+		for (int idx_obs = 0; idx_obs < transformed_obs.size(); idx_obs++) {
+			// retrieving the transformed observations
+			double o_x = transformed_obs[idx_obs].x, o_y = transformed_obs[idx_obs].y;
+			int landmark_id = transformed_obs[idx_obs].id;
 
-			double landmarkX, landmarkY;
-			unsigned int k = 0;
-			unsigned int nLandmarks = inRangeLandmarks.size();
-			bool found = false;
-			while (!found && k < nLandmarks) {
-				if (inRangeLandmarks[k].id == landmarkId) {
-					found = true;
-					landmarkX = inRangeLandmarks[k].x;
-					landmarkY = inRangeLandmarks[k].y;
+			// find the position of the landmark (in the global coordinate) whose id matches the landmark id
+			double lm_x = 0, lm_y = 0;
+			for (auto lm : closelandmarks) {
+				if (lm.id == landmark_id) {
+					lm_x = lm.x;
+					lm_y = lm.y;
+					break;
 				}
-				k++;
 			}
 
-			// Calculating weight.
-			double dX = observationX - landmarkX;
-			double dY = observationY - landmarkY;
+			// calculating the probability
 
-			double weight = (1 / (2 * M_PI*stdLandmarkRange*stdLandmarkBearing)) * exp(-(dX*dX / (2 * stdLandmarkRange*stdLandmarkRange) + (dY*dY / (2 * stdLandmarkBearing*stdLandmarkBearing))));
-			if (weight == 0) {
-				particles[i].weight *= 0.00001;
+			double dx = o_x - lm_x, dy = o_y - lm_y;
+			double obs_prob = (1 / (2 * M_PI*std_x*std_y)) * exp(-(dx*dx / (2 * std_x* std_x) + (dy*dy / (2 * std_y * std_y))));
+			if (obs_prob == 0) {
+				particle_obs_prob *= 0.00000001;
 			}
 			else {
-				particles[i].weight *= weight;
+				particle_obs_prob *= obs_prob;
 			}
 		}
-		weights[i] = particles[i].weight;
+		particles[i].weight = particle_obs_prob; // assigning probability
+		weights[i] = particle_obs_prob;
 	}
-	cout << " weight updated " << endl;
 }
 
 void ParticleFilter::resample() {
