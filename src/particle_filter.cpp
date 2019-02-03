@@ -60,6 +60,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 		part.x = Dx(generator);
 		part.y = Dy(generator);
 		part.theta = Dtheta(generator);
+		part.weight = 1.0;
 		particles[i] = part;
 	}
 
