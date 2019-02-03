@@ -209,14 +209,39 @@ void ParticleFilter::resample() {
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 	
 	// normalizing the weights
-	default_random_engine rand_gen;
-
-	discrete_distribution<> dist(weights.begin(), weights.end());
-	vector<Particle> newParticles;
+	default_random_engine gen;
+	cout << " resampling ... " << endl;
+	vector<double> weightslocal;
+	double maxWeight = numeric_limits<double>::min();
 	for (int i = 0; i < num_particles; i++) {
-		int sampled_idx = dist(rand_gen);
-		newParticles.push_back(particles[sampled_idx]);
+		weightslocal.push_back(particles[i].weight);
+		if (particles[i].weight > maxWeight) {
+			maxWeight = particles[i].weight;
+		}
 	}
+
+	// Creating distributions.
+	uniform_real_distribution<double> distDouble(0.0, maxWeight);
+	uniform_int_distribution<int> distInt(0, num_particles - 1);
+
+	// Generating index.
+	int index = distInt(gen);
+
+	double beta = 0.0;
+
+	// the wheel
+	vector<Particle> resampledParticles;
+	for (int i = 0; i < num_particles; i++) {
+		beta += distDouble(gen) * 2.0;
+		while (beta > weightslocal[index]) {
+			beta -= weightslocal[index];
+			index = (index + 1) % num_particles;
+		}
+		resampledParticles.push_back(particles[index]);
+	}
+
+	particles = resampledParticles;
+	cout << " new samples generated " << endl;
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations, 
