@@ -21,3 +21,6 @@ We discuss several challenges in implementations
 
 
 ### Implementation challenges
+* One has to find a one to one correspondence between the observed landmarks and the actual measurements. Typically, one adopts a neareast neighbor method to associate the ID of an actual observation to a given landmark. Although this method is intuitive and easy to implement, it suffers from following three pitfalls. It may be sensitive to the density of landmarks, i.e., when there is a cluster of landmarks that are close to each other, nearest neighbor may not be robust enough to associate the true label to the observation. This method is also not robust to sensor measurement errors. Moreover, obtaining the nearest neighbor is time-consuming (i.e., O(# of landmarks x # of observations)).
+
+* One has to transform the observations from the vehicle's perspective (for each particle) to the map's perspective.
