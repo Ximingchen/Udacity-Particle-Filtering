@@ -160,8 +160,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		vector<LandmarkObs> transformed_obs(observations.begin(), observations.end());
 		for (int idx_obs = 0; idx_obs < observations.size(); idx_obs++) {
 			double obs_x = observations[idx_obs].x, obs_y = observations[idx_obs].y;
-			double mapped_x = cos(theta) * obs_x - sin(theta) * obs_y + x;
-			double mapped_y = sin(theta) * obs_x + cos(theta) * obs_y + y;
+			double mapped_x = cos(theta) * obs_x - sin(theta) * obs_y + x_pos;
+			double mapped_y = sin(theta) * obs_x + cos(theta) * obs_y + y_pos;
 			transformed_obs[idx_obs].x = mapped_x;
 			transformed_obs[idx_obs].y = mapped_y;
 		}
@@ -213,7 +213,7 @@ void ParticleFilter::resample() {
 	discrete_distribution<double> dist(weights.begin(), weights.end());
 	vector<Particle> newParticles;
 	for (int i = 0; i < num_particles; i++) {
-		Particle sampled_idx = dist(gen);
+		int sampled_idx = dist(rand_gen);
 		newParticles.push_back(particles[sampled_idx]);
 	}
 }
