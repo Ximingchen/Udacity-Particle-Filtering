@@ -72,6 +72,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 	if (particles.size() == 0) return;
+	cout << " current number of particles: " << particles.size() << endl;
 	normal_distribution<double> Dx(0, std_pos[0]); // create normal distribution for x,y,theta respectively
 	normal_distribution<double> Dy(0, std_pos[1]);
 	normal_distribution<double> Dtheta(0, std_pos[2]);
