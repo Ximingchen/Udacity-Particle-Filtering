@@ -96,7 +96,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 
 		double theta = particles[i].theta;
 
-		if (fabs(yaw_rate) < EPS) { // When yaw is not changing.
+		if (fabs(yaw_rate) < 0.00001) { // When yaw is not changing.
 			particles[i].x += velocity * delta_t * cos(theta);
 			particles[i].y += velocity * delta_t * sin(theta);
 			// yaw continue to be the same.
