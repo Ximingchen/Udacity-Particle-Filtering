@@ -35,7 +35,7 @@ std::vector<double> sense_y;
 */
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
-	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of 
+	// Set the number of particles. Initialize all particles to first position (based on estimates of 
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
@@ -216,42 +216,6 @@ void ParticleFilter::resample() {
 		newParticles.push_back(particles[sampled_idx]);
 	}
 	particles = newParticles;
-	/*
-
-	default_random_engine gen;
-	cout << " resampling ... " << endl;
-	vector<double> weightslocal;
-	double maxWeight = numeric_limits<double>::min();
-	for (int i = 0; i < num_particles; i++) {
-		weightslocal.push_back(particles[i].weight);
-		if (particles[i].weight > maxWeight) {
-			maxWeight = particles[i].weight;
-		}
-	}
-
-	// Creating distributions.
-	uniform_real_distribution<double> distDouble(0.0, maxWeight);
-	uniform_int_distribution<int> distInt(0, num_particles - 1);
-
-	// Generating index.
-	int index = distInt(gen);
-
-	double beta = 0.0;
-
-	// the wheel
-	vector<Particle> resampledParticles;
-	for (int i = 0; i < num_particles; i++) {
-		beta += distDouble(gen) * 2.0;
-		while (beta > weightslocal[index]) {
-			beta -= weightslocal[index];
-			index = (index + 1) % num_particles;
-		}
-		resampledParticles.push_back(particles[index]);
-	}
-
-	particles = resampledParticles;
-	cout << " new samples generated " << endl;
-	*/
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations, 
