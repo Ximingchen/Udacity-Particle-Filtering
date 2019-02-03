@@ -107,34 +107,21 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 	//
-	unsigned int nObservations = observations.size();
-	unsigned int nPredictions = predicted.size();
-
-	for (unsigned int i = 0; i < nObservations; i++) { // For each observation
-
-													   // Initialize min distance as a really big number.
-		double minDistance = numeric_limits<double>::max();
-
-		// Initialize the found map in something not possible.
-		int mapId = -1;
-
-		for (unsigned j = 0; j < nPredictions; j++) { // For each predition.
-
-			double xDistance = observations[i].x - predicted[j].x;
-			double yDistance = observations[i].y - predicted[j].y;
-
-			double distance = xDistance * xDistance + yDistance * yDistance;
-
-			// If the "distance" is less than min, stored the id and update min.
-			if (distance < minDistance) {
-				minDistance = distance;
-				mapId = predicted[j].id;
+	for (auto & obs_landmark : observations) {
+		double obs_lm_xpos = obs_landmark.x;
+		double obs_lm_ypos = obs_landmark.y;
+		double min_dist = numeric_limits<double>::max();
+		int ID = -1;
+		for (auto pred_landmark : predicted) {
+			double cur_dist = dist(obs_lm_xpos, obs_lm_ypos, pred_landmark.x, pred_landmark.y);
+			if (cur_dist < min_dist) {
+				min_dist = cur_dist;
+				ID = pred_landmark.id;
 			}
 		}
-
-		// Update the observation identifier.
-		observations[i].id = mapId;
+		obs_landmark.id = ID; // cannot find any associations
 	}
+
 	cout << " data associations " << endl;
 }
 
