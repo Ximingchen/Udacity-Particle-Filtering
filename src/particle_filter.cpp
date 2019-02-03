@@ -68,7 +68,6 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 		particle.weight = 1.0;
 
 		particles.push_back(particle);
-		weights.push_back(1.0);
 	}
 	cout << " sucessfully initialzied " << endl;
 	// The filter is now initialized.
@@ -81,36 +80,34 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
-	double std_x = std_pos[0];
-	double std_y = std_pos[1];
-	double std_theta = std_pos[2];
-	std::default_random_engine gen;
+	if (particles.size() == 0) return;
+	
+	normal_distribution<double> Dx(0, std_pos[0]); // create normal distribution for x,y,theta respectively
+	normal_distribution<double> Dy(0, std_pos[1]);
+	normal_distribution<double> Dtheta(0, std_pos[2]);
 
-	// Creating normal distributions
-	normal_distribution<double> dist_x(0, std_x);
-	normal_distribution<double> dist_y(0, std_y);
-	normal_distribution<double> dist_theta(0, std_theta);
-
-	// Calculate new state.
-	for (int i = 0; i < num_particles; i++) {
-
-		double theta = particles[i].theta;
-
-		if (fabs(yaw_rate) < 0.00001) { // When yaw is not changing.
-			particles[i].x += velocity * delta_t * cos(theta);
-			particles[i].y += velocity * delta_t * sin(theta);
-			// yaw continue to be the same.
+	default_random_engine rand_gen;
+	// the vehicle model is defined by:
+	// x_t = x_0 + v/yaw_rate[sin(theta_0 + yaw_rate * dt) - sin(theta_0)]
+	// y_t = y_0 + v/yawrate[cos(theta_0) - cos(theta_0 + yaw_rate * dt)]
+	// theta_t = theta_0 + yaw_rate dt;
+	double tolerence = 0.00001;
+	for (int i = 0; i < particles.size(); i++) {
+		double x0 = particles[i].x;
+		double y0 = particles[i].y;
+		double theta0 = particles[i].theta;
+		double error_x = Dx(rand_gen);
+		double error_y = Dy(rand_gen);
+		double error_theta = Dtheta(rand_gen);
+		if (fabs(yaw_rate) < tolerence) {
+			particles[i].x = x0 + velocity * delta_t * cos(theta0) + error_x;
+			particles[i].y = y0 + velocity * delta_t * sin(theta0) + error_y;
 		}
 		else {
-			particles[i].x += velocity / yaw_rate * (sin(theta + yaw_rate * delta_t) - sin(theta));
-			particles[i].y += velocity / yaw_rate * (cos(theta) - cos(theta + yaw_rate * delta_t));
-			particles[i].theta += yaw_rate * delta_t;
+			particles[i].x = x0 + velocity / yaw_rate * (sin(theta0 + yaw_rate * delta_t) - sin(theta0)) + error_x;
+			particles[i].y = y0 + velocity / yaw_rate * (cos(theta0) - cos(theta0 + yaw_rate * delta_t)) + error_y;
 		}
-
-		// Adding noise.
-		particles[i].x += dist_x(gen);
-		particles[i].y += dist_y(gen);
-		particles[i].theta += dist_theta(gen);
+		particles[i].theta = theta0 + yaw_rate * delta_t + error_theta;
 	}
 	cout << " running predictions " << endl;
 }
@@ -121,18 +118,33 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 	//
-	for (auto obs_landmark : observations) {
-		double obs_lm_xpos = obs_landmark.x;
-		double obs_lm_ypos = obs_landmark.y;
-		double min_dist = 1.0e19;
-		for (auto pred_landmark : predicted) {
-			double cur_dist = dist(obs_lm_xpos, obs_lm_ypos, pred_landmark.x, pred_landmark.y);
-			if (cur_dist < min_dist) {
-				min_dist = cur_dist;
-				obs_landmark.id = pred_landmark.id;
+	unsigned int nObservations = observations.size();
+	unsigned int nPredictions = predicted.size();
+
+	for (unsigned int i = 0; i < nObservations; i++) { // For each observation
+
+													   // Initialize min distance as a really big number.
+		double minDistance = numeric_limits<double>::max();
+
+		// Initialize the found map in something not possible.
+		int mapId = -1;
+
+		for (unsigned j = 0; j < nPredictions; j++) { // For each predition.
+
+			double xDistance = observations[i].x - predicted[j].x;
+			double yDistance = observations[i].y - predicted[j].y;
+
+			double distance = xDistance * xDistance + yDistance * yDistance;
+
+			// If the "distance" is less than min, stored the id and update min.
+			if (distance < minDistance) {
+				minDistance = distance;
+				mapId = predicted[j].id;
 			}
 		}
-		if (min_dist > 1.0e10) obs_landmark.id = -1; // cannot find any associations
+
+		// Update the observation identifier.
+		observations[i].id = mapId;
 	}
 	cout << " data associations " << endl;
 }
@@ -232,7 +244,7 @@ void ParticleFilter::resample() {
 		int sampled_idx = dist(rand_gen);
 		newParticles.push_back(particles[sampled_idx]);
 	}
-	cout << " new particles generated " << endl;
+	cout << " new samples generated " << endl;
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations, 
