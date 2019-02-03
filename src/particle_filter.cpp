@@ -81,34 +81,35 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
-	if (particles.size() == 0) return;
-	
-	normal_distribution<double> Dx(0, std_pos[0]); // create normal distribution for x,y,theta respectively
-	normal_distribution<double> Dy(0, std_pos[1]);
-	normal_distribution<double> Dtheta(0, std_pos[2]);
+	double std_x = std_pos[0];
+	double std_y = std_pos[1];
+	double std_theta = std_pos[2];
 
-	default_random_engine rand_gen;
-	// the vehicle model is defined by:
-	// x_t = x_0 + v/yaw_rate[sin(theta_0 + yaw_rate * dt) - sin(theta_0)]
-	// y_t = y_0 + v/yawrate[cos(theta_0) - cos(theta_0 + yaw_rate * dt)]
-	// theta_t = theta_0 + yaw_rate dt;
-	double tolerence = 0.00001;
-	for (int i = 0; i < particles.size(); i++) {
-		double x0 = particles[i].x;
-		double y0 = particles[i].y;
-		double theta0 = particles[i].theta;
-		double error_x = Dx(rand_gen);
-		double error_y = Dy(rand_gen);
-		double error_theta = Dtheta(rand_gen);
-		if (fabs(yaw_rate) < tolerence) {
-			particles[i].x = x0 + velocity * delta_t * cos(theta0) + error_x;
-			particles[i].y = y0 + velocity * delta_t * sin(theta0) + error_y;
+	// Creating normal distributions
+	normal_distribution<double> dist_x(0, std_x);
+	normal_distribution<double> dist_y(0, std_y);
+	normal_distribution<double> dist_theta(0, std_theta);
+
+	// Calculate new state.
+	for (int i = 0; i < num_particles; i++) {
+
+		double theta = particles[i].theta;
+
+		if (fabs(yaw_rate) < EPS) { // When yaw is not changing.
+			particles[i].x += velocity * delta_t * cos(theta);
+			particles[i].y += velocity * delta_t * sin(theta);
+			// yaw continue to be the same.
 		}
 		else {
-			particles[i].x = x0 + velocity / yaw_rate * (sin(theta0 + yaw_rate * delta_t) - sin(theta0)) + error_x;
-			particles[i].y = y0 + velocity / yaw_rate * (cos(theta0) - cos(theta0 + yaw_rate * delta_t)) + error_y;
+			particles[i].x += velocity / yaw_rate * (sin(theta + yaw_rate * delta_t) - sin(theta));
+			particles[i].y += velocity / yaw_rate * (cos(theta) - cos(theta + yaw_rate * delta_t));
+			particles[i].theta += yaw_rate * delta_t;
 		}
-		particles[i].theta = theta0 + yaw_rate * delta_t + error_theta;
+
+		// Adding noise.
+		particles[i].x += dist_x(gen);
+		particles[i].y += dist_y(gen);
+		particles[i].theta += dist_theta(gen);
 	}
 	cout << " running predictions " << endl;
 }
