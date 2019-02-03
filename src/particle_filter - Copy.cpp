@@ -42,35 +42,27 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	if (is_initialized) {
 		return;
 	}
-
-	// Initializing the number of particles
-	num_particles = 100;
-
-	// Extracting standard deviations
-	double std_x = std[0];
-	double std_y = std[1];
-	double std_theta = std[2];
-
-	// Creating normal distributions
-	normal_distribution<double> dist_x(x, std_x);
-	normal_distribution<double> dist_y(y, std_y);
-	normal_distribution<double> dist_theta(theta, std_theta);
-
-	// Generate particles with normal distribution with mean on GPS values.
-	for (int i = 0; i < num_particles; i++) {
-
-		Particle particle;
-		particle.id = i;
-		particle.x = dist_x(gen);
-		particle.y = dist_y(gen);
-		particle.theta = dist_theta(gen);
-		particle.weight = 1.0;
-
-		particles.push_back(particle);
-	}
-
-	// The filter is now initialized.
 	is_initialized = true;
+	num_particles = 100;  // Set the number of particles
+	default_random_engine generator;
+
+	normal_distribution<double> Dx(x, std[0]); // create normal distribution for x,y,theta respectively
+	normal_distribution<double> Dy(y, std[1]);
+	normal_distribution<double> Dtheta(theta, std[2]);
+
+	particles.resize(num_particles); // set the size for vectors
+	weights.resize(num_particles);
+	for (int i = 0; i < num_particles; i++) {
+		// initialize all particles to first 
+		weights[i] = 1.0;
+		Particle part;
+		part.id = i;
+		part.x = Dx(generator);
+		part.y = Dy(generator);
+		part.theta = Dtheta(generator);
+		part.weight = 1.0;
+		particles[i] = part;
+	}
 
 }
 
