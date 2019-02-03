@@ -210,7 +210,7 @@ void ParticleFilter::resample() {
 	// normalizing the weights
 	default_random_engine rand_gen;
 
-	discrete_distribution<double> dist(weights.begin(), weights.end());
+	discrete_distribution<> dist(weights.begin(), weights.end());
 	vector<Particle> newParticles;
 	for (int i = 0; i < num_particles; i++) {
 		int sampled_idx = dist(rand_gen);
