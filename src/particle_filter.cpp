@@ -69,7 +69,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
 		particles.push_back(particle);
 	}
-
+	cout << " sucessfully initialzied " << endl;
 	// The filter is now initialized.
 	is_initialized = true;
 
