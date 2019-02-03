@@ -186,9 +186,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 					break;
 				}
 			}
-
 			// calculating the probability
-
 			double dx = o_x - lm_x, dy = o_y - lm_y;
 			double obs_prob = (1 / (2 * M_PI*std_x*std_y)) * exp(-(dx*dx / (2 * std_x* std_x) + (dy*dy / (2 * std_y * std_y))));
 			if (obs_prob == 0) {
@@ -209,6 +207,18 @@ void ParticleFilter::resample() {
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 	
 	// normalizing the weights
+
+	static default_random_engine gen;
+	gen.seed(123);
+	discrete_distribution<> dist_particles(weights.begin(), weights.end());
+	vector<Particle> new_particles;
+	new_particles.resize(num_particles);
+	for (int i = 0; i < num_particles; i++) {
+		new_particles[i] = particles[dist_particles(gen)];
+	}
+	particles = new_particles;
+	/*
+
 	default_random_engine gen;
 	cout << " resampling ... " << endl;
 	vector<double> weightslocal;
@@ -242,6 +252,7 @@ void ParticleFilter::resample() {
 
 	particles = resampledParticles;
 	cout << " new samples generated " << endl;
+	*/
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations, 
