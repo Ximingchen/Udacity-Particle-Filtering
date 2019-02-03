@@ -166,7 +166,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	// transformation from one system to another:
 	double stdLandmarkRange = std_landmark[0];
 	double stdLandmarkBearing = std_landmark[1];
-
+	std::default_random_engine gen;
 	for (int i = 0; i < num_particles; i++) {
 
 		double x = particles[i].x;
